@@ -1,7 +1,103 @@
-type AdvisorProps = { onNotice: (message: string) => void; onOpenAdvisor: () => void };
+import { FormEvent, useState } from 'react';
+import AccountActions from '../components/AccountActions';
 
-const actions = [['Comprendre mon risque', 'Comparez votre score de risque avec la volatilité actuelle du portefeuille.'], ['Préparer un rééquilibrage', 'Identifiez les écarts entre vos cibles et vos positions actuelles.'], ['Explorer un scénario', 'Testez l’effet d’une baisse de marché ou d’un versement périodique.']];
+type AdvisorProps = { onNotice: (message: string) => void; onOpenAccount: () => void };
 
-export default function Advisor({ onNotice, onOpenAdvisor }: AdvisorProps) {
-  return <div id="main-content" className="page-flow advisor-page"><section className="advisor-hero"><div><div className="eyebrow">Gemma · conseiller patrimonial</div><h2>Transformez une question en prochaine action.</h2><p>Gemma s’appuie sur votre profil, vos positions et les outils quantitatifs. Les réponses affichées ici sont simulées tant que l’API n’est pas connectée.</p></div><button className="primary-action" type="button" onClick={onOpenAdvisor}>Ouvrir la conversation <span aria-hidden="true">↗</span></button></section><section className="advisor-actions"><div className="section-heading"><div><div className="eyebrow">Points de départ</div><h2>Que voulez-vous éclairer ?</h2></div><span className="section-meta">3 actions guidées</span></div><div className="action-list">{actions.map(([title, description], index) => <button className="action-row" type="button" key={title} onClick={() => onNotice(`Gemma préparera une analyse « ${title} » lorsque le backend sera connecté.`)}><span className="action-number">0{index + 1}</span><span><strong>{title}</strong><small>{description}</small></span><span className="action-arrow" aria-hidden="true">→</span></button>)}</div></section><section className="advisor-method"><div><div className="eyebrow">Méthode</div><h2>Un raisonnement traçable</h2></div><ol><li><strong>Votre profil</strong><span>Objectifs, horizon et capacité de risque</span></li><li><strong>Les données</strong><span>Marchés, actualités et contexte macroéconomique</span></li><li><strong>Les scénarios</strong><span>Optimisation, Monte Carlo et analyse des risques</span></li></ol></section></div>;
+type Message = {
+  role: 'assistant' | 'user';
+  content: string;
+};
+
+const starterPrompts = ['Quel est le risque principal de mon portefeuille ?', 'Que puis-je améliorer ce mois-ci ?', 'Simuler un rééquilibrage'];
+
+export default function Advisor({ onNotice, onOpenAccount }: AdvisorProps) {
+  const [question, setQuestion] = useState('');
+  const [messages, setMessages] = useState<Message[]>([
+    {
+      role: 'assistant',
+      content: 'Bonjour Camille. Je peux vous aider à comprendre votre portefeuille, vos risques et les prochaines décisions à envisager.',
+    },
+  ]);
+  const [isSending, setIsSending] = useState(false);
+
+  const send = (event: FormEvent) => {
+    event.preventDefault();
+    const cleanQuestion = question.trim();
+    if (!cleanQuestion || isSending) return;
+
+    setMessages((current) => [...current, { role: 'user', content: cleanQuestion }]);
+    setQuestion('');
+    setIsSending(true);
+    window.setTimeout(() => {
+      setMessages((current) => [
+        ...current,
+        {
+          role: 'assistant',
+          content: `Je prends en compte votre demande « ${cleanQuestion} ». Les données de marché et les simulations seront bientôt appelées via l’API FastAPI.`,
+        },
+      ]);
+      setIsSending(false);
+    }, 650);
+  };
+
+  const startConversation = () => {
+    setMessages([]);
+    setQuestion('');
+    onNotice('Nouvelle conversation créée en mode simulation.');
+  };
+
+  return (
+    <div id="main-content" className="advisor-chat-page">
+      <header className="advisor-chat-topbar">
+        <button className="advisor-model" type="button" onClick={startConversation} aria-label="Nouvelle conversation avec Gemma">
+          <span className="brand-mark advisor-brand-mark" aria-hidden="true" />
+          <span>Gemma</span>
+          <span className="model-caret" aria-hidden="true">⌄</span>
+        </button>
+        <div className="advisor-account-actions">
+          <span className="advisor-demo-label"><span className="status-dot" />Mode simulation</span>
+          <AccountActions onOpen={onOpenAccount} />
+        </div>
+      </header>
+
+      <div className="advisor-chat-layout">
+        <section className="conversation-main" aria-label="Conversation avec Gemma">
+          <div className="conversation-scroll">
+            {messages.length === 0 ? (
+              <div className="chat-welcome">
+                <div className="welcome-icon" aria-hidden="true">✦</div>
+                <h2>Que voulez-vous éclairer ?</h2>
+                <p>Posez une question sur votre patrimoine ou choisissez un point de départ.</p>
+              </div>
+            ) : (
+              <div className="message-list">
+                {messages.map((message, index) => (
+                  <article className={`full-chat-message ${message.role}`} key={`${message.role}-${index}`}>
+                    <div className="message-avatar" aria-hidden="true">{message.role === 'assistant' ? 'N' : 'CM'}</div>
+                    <div className="message-copy">
+                      <strong>{message.role === 'assistant' ? 'Gemma' : 'Vous'}</strong>
+                      <p>{message.content}</p>
+                    </div>
+                  </article>
+                ))}
+                {isSending && <div className="full-chat-message assistant"><div className="message-avatar" aria-hidden="true">N</div><div className="message-copy"><strong>Gemma</strong><p className="typing-state"><span />Analyse en cours<span className="typing-dots">...</span></p></div></div>}
+              </div>
+            )}
+          </div>
+
+          <div className="composer-area">
+            {messages.length === 1 && <div className="starter-prompts">{starterPrompts.map((prompt) => <button type="button" key={prompt} onClick={() => setQuestion(prompt)}>{prompt}<span aria-hidden="true">↗</span></button>)}</div>}
+            <form className="full-chat-form" onSubmit={send}>
+              <button className="composer-add" type="button" aria-label="Ajouter une pièce jointe" onClick={() => onNotice('Les pièces jointes seront disponibles avec votre compte.')}>＋</button>
+              <label className="sr-only" htmlFor="full-advisor-question">Message à Gemma</label>
+              <input id="full-advisor-question" value={question} onChange={(event) => setQuestion(event.target.value)} placeholder="Écrivez votre message à Gemma..." />
+              <button className="composer-send" type="submit" aria-label="Envoyer le message" disabled={!question.trim() || isSending}>↑</button>
+            </form>
+            <p className="chat-disclaimer">Gemma peut se tromper. Vérifiez les informations importantes avant de prendre une décision.</p>
+          </div>
+        </section>
+      </div>
+
+    </div>
+  );
 }
