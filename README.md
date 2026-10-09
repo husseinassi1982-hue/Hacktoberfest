@@ -41,11 +41,11 @@ frontend/src/components/MonteCarloChart.tsx
 frontend/src/components/AgentChat.tsx
 ```
 
-The backend is organized into API, agent, quantitative analytics, data, RAG, services, models, and database modules. The frontend contains React TypeScript page and component placeholders.
+The backend is organized into API, agent, quantitative analytics, data, RAG, services, models, and database modules. The frontend contains the React TypeScript interface and a typed advisor API client.
 
 ## Status
 
-This change establishes the requested structure. Financial calculations, market providers, Gemma, RAG, persistence, and UI behavior remain unimplemented. The frontend is source scaffolding; its package configuration, entry point, and build tooling still need to be added. Empty models and database directories are tracked with .gitkeep files.
+The current backend includes portfolio analysis, suitability checks, risk metrics, optimization, Monte Carlo simulations, backtests, stress scenarios, structured chart data, a deterministic advisor-tool endpoint, CORS configuration, and SQLite-backed account registration/login. Market macro data, news/RAG retrieval, model-provider integration, and domain persistence are still planned.
 
 ## Backend development
 
@@ -64,3 +64,6 @@ uvicorn app.main:app --reload
 ```
 
 Health endpoint: http://localhost:8000/health. API documentation: http://localhost:8000/docs.
+
+On Windows, `uvloop` is skipped automatically by the platform marker in
+`requirements.txt`.

@@ -1,5 +1,6 @@
 import { FormEvent, useState } from 'react';
 import AccountActions from '../components/AccountActions';
+import { askAdvisor } from '../api';
 
 type AdvisorProps = { onNotice: (message: string) => void; onOpenAccount: () => void };
 
@@ -28,16 +29,25 @@ export default function Advisor({ onNotice, onOpenAccount }: AdvisorProps) {
     setMessages((current) => [...current, { role: 'user', content: cleanQuestion }]);
     setQuestion('');
     setIsSending(true);
-    window.setTimeout(() => {
-      setMessages((current) => [
-        ...current,
-        {
-          role: 'assistant',
-          content: `Je prends en compte votre demande « ${cleanQuestion} ». Les données de marché et les simulations seront bientôt appelées via l’API FastAPI.`,
-        },
-      ]);
+    void askAdvisor(cleanQuestion)
+      .then((response) => {
+        setMessages((current) => [
+          ...current,
+          { role: 'assistant', content: `${response.message}\n\n${response.disclaimer}` },
+        ]);
+      })
+      .catch((error: Error) => {
+        setMessages((current) => [
+          ...current,
+          {
+            role: 'assistant',
+            content: `Je ne peux pas joindre le service de conseil pour le moment : ${error.message}`,
+          },
+        ]);
+      })
+      .finally(() => {
       setIsSending(false);
-    }, 650);
+      });
   };
 
   const startConversation = () => {

@@ -19,6 +19,14 @@ from app.quant.optimizer import (
 
 from app.models.backtest import BacktestRequest
 from app.quant.backtest import run_backtest
+from app.models.scenario import StressTestRequest
+from app.quant.scenarios import (
+    get_available_scenarios,
+    get_preset_scenario,
+    run_stress_test,
+)
+from app.models.charts import ChartDataRequest
+from app.services.charts import portfolio_chart_data, stress_chart_data
 
 router = APIRouter(
     prefix="/portfolio",
@@ -263,4 +271,32 @@ def backtest(request: BacktestRequest):
         weights=request.weights,
         benchmark=request.benchmark.upper(),
         risk_free_rate=request.risk_free_rate
+    )
+
+
+@router.get("/stress-test/presets")
+def stress_test_presets():
+    return get_available_scenarios()
+
+
+@router.post("/stress-test")
+def stress_test(request: StressTestRequest):
+    return run_stress_test(
+        request.portfolio,
+        request.scenario.model_dump(),
+    )
+
+
+@router.post("/stress-test/preset/{preset}")
+def stress_test_with_preset(preset: str, portfolio: Portfolio):
+    return run_stress_test(portfolio, get_preset_scenario(preset))
+
+
+@router.post("/chart-data")
+def chart_data(request: ChartDataRequest):
+    if request.scenario is None:
+        return portfolio_chart_data(request.portfolio)
+    return stress_chart_data(
+        request.portfolio,
+        request.scenario.model_dump(),
     )
