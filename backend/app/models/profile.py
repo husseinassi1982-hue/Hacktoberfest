@@ -17,5 +17,5 @@ class InvestorProfile(BaseModel):
 
     investment_goal: str
 
-    preferred_assets: List[str] = []
-    preferred_sectors: List[str] = []
+    preferred_assets: List[str] = Field(default_factory=list)
+    preferred_sectors: List[str] = Field(default_factory=list)
