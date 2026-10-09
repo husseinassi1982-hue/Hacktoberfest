@@ -1,3 +1,2 @@
-export default function AllocationChart() {
-  return <section aria-label="Allocation Chart"><p>Implementation pending.</p></section>;
-}
+import { allocations } from '../mockData';
+export default function AllocationChart() { return <div className="allocation-panel" aria-label="Allocation par secteur"><div className="allocation-body"><div className="donut"><div className="donut-label"><strong>100%</strong><span>investi</span></div></div><div className="allocation-list">{allocations.map((item) => <div className="allocation-row" key={item.name}><i className="allocation-color" style={{ background: item.color }} /><span>{item.name}</span><span>{item.value}%</span></div>)}</div></div></div>; }

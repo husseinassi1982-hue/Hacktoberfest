@@ -1,3 +1,1 @@
-export default function RiskCard() {
-  return <section aria-label="Risk Card"><p>Implementation pending.</p></section>;
-}
+export default function RiskCard() { return <section className="risk-panel" aria-label="Profil de risque"><div className="risk-panel-heading"><h3>Niveau de risque</h3><span className="mono">MIS À JOUR · 02 OCT.</span></div><div className="risk-score"><div className="risk-ring"><strong>62</strong></div><div className="risk-copy"><strong>Modéré dynamique</strong><p>Un équilibre entre croissance du capital et capacité à absorber les baisses.</p></div></div><div className="risk-scale"><div className="scale-bar"><span /><span /><span /><span /><span /></div><div className="scale-labels"><span>Prudent</span><span>Dynamique</span><span>Agressif</span></div></div></section>; }

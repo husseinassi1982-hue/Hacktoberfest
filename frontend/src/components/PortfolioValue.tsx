@@ -1,3 +1,3 @@
-export default function PortfolioValue() {
-  return <section aria-label="Portfolio Value"><p>Implementation pending.</p></section>;
-}
+import { portfolioHistory } from '../mockData';
+function points(values: number[], width: number, height: number) { const min = Math.min(...values); const max = Math.max(...values); return values.map((value, index) => `${(index / (values.length - 1)) * width},${height - ((value - min) / (max - min)) * height}`).join(' '); }
+export default function PortfolioValue() { const line = points(portfolioHistory, 420, 55); return <div className="value-trend" aria-label="Évolution de la valeur du portefeuille"><svg className="sparkline" viewBox="0 0 420 55" preserveAspectRatio="none"><polyline points={line} fill="none" stroke="#c85b3f" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" /></svg><div className="trend-labels"><span>09 oct. 2025</span><span>Aujourd’hui</span></div></div>; }
