@@ -1,0 +1,47 @@
+name: finpilot
+region: tor
+services:
+  - name: backend
+    github:
+      repo: REPLACE_WITH_GITHUB_OWNER/REPLACE_WITH_GITHUB_REPO
+      branch: main
+      deploy_on_push: true
+    dockerfile_path: backend/Dockerfile
+    source_dir: backend
+    http_port: 8000
+    instance_count: 1
+    instance_size_slug: basic-xxs
+    envs:
+      - key: DATABASE_URL
+        scope: RUN_TIME
+        value: ${finpilot-db.DATABASE_URL}
+        type: general
+      - key: GEMINI_API_KEY
+        scope: RUN_TIME
+        type: secret
+      - key: GEMMA_MODEL
+        scope: RUN_TIME
+        value: gemma-4-26b-a4b-it
+      - key: FRONTEND_ORIGINS
+        scope: RUN_TIME
+        value: https://REPLACE_WITH_FRONTEND_DOMAIN
+  - name: frontend
+    github:
+      repo: REPLACE_WITH_GITHUB_OWNER/REPLACE_WITH_GITHUB_REPO
+      branch: main
+      deploy_on_push: true
+    dockerfile_path: frontend/Dockerfile
+    source_dir: frontend
+    http_port: 80
+    instance_count: 1
+    instance_size_slug: basic-xxs
+    build_command: npm ci
+    envs:
+      - key: VITE_API_BASE_URL
+        scope: BUILD_TIME
+        value: https://REPLACE_WITH_BACKEND_DOMAIN
+databases:
+  - name: finpilot-db
+    engine: PG
+    production: true
+    cluster_name: REPLACE_WITH_DO_POSTGRES_CLUSTER

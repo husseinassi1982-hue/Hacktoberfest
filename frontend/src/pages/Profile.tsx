@@ -1,4 +1,5 @@
-import { Dispatch, FormEvent, SetStateAction, useState } from 'react';
+import { Dispatch, FormEvent, SetStateAction, useEffect, useState } from 'react';
+import { getInvestorProfile, saveInvestorProfile } from '../api';
 
 type ProfileProps = { onNotice: (message: string) => void };
 type TagEditorProps = {
@@ -49,6 +50,8 @@ function TagEditor({ label, values, suggestions, placeholder, onChange }: TagEdi
 }
 
 export default function Profile({ onNotice }: ProfileProps) {
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [name, setName] = useState('Camille Martin');
   const [residence, setResidence] = useState('');
   const [currency, setCurrency] = useState('CAD');
@@ -72,9 +75,45 @@ export default function Profile({ onNotice }: ProfileProps) {
   const [liquidityNeed, setLiquidityNeed] = useState('');
   const [notes, setNotes] = useState('');
 
+  useEffect(() => {
+    void getInvestorProfile().then(({ profile }) => {
+      if (!profile) return;
+      const value = profile as Record<string, unknown>;
+      if (typeof value.display_name === 'string') setName(value.display_name);
+      if (typeof value.tax_residence === 'string') setResidence(value.tax_residence);
+      if (typeof value.currency === 'string') setCurrency(value.currency);
+      if (typeof value.investment_goal === 'string') setObjective(value.investment_goal);
+      if (typeof value.investment_horizon_years === 'number') setHorizonYears(String(value.investment_horizon_years));
+      if (typeof value.amount_to_invest === 'number') setInitialCapital(String(value.amount_to_invest));
+      if (typeof value.monthly_contribution === 'number') setMonthlyContribution(String(value.monthly_contribution));
+      if (typeof value.risk_tolerance === 'number') setRisk(Math.round(value.risk_tolerance * 20));
+      if (typeof value.max_loss_percent === 'number') setMaxLoss(String(value.max_loss_percent));
+      if (Array.isArray(value.preferred_assets)) setAssets(value.preferred_assets.filter((item): item is string => typeof item === 'string'));
+      if (Array.isArray(value.preferred_sectors)) setSectors(value.preferred_sectors.filter((item): item is string => typeof item === 'string'));
+      if (Array.isArray(value.exclusions)) setExcludedSectors(value.exclusions.filter((item): item is string => typeof item === 'string'));
+      if (typeof value.investment_experience === 'string') setExperience(value.investment_experience);
+      if (typeof value.liquidity_needs === 'string') setLiquidityNeed(value.liquidity_needs);
+      if (typeof value.constraints === 'string') setNotes(value.constraints);
+      if (Array.isArray(value.constraints)) setNotes(value.constraints.filter((item): item is string => typeof item === 'string').join('\n'));
+    }).catch(() => undefined).finally(() => setLoading(false));
+  }, []);
+
   const save = (event: FormEvent) => {
     event.preventDefault();
-    onNotice('Profil sauvegardé localement. Aucune donnée bancaire n’est envoyée ni chiffrée pour le moment.');
+    setSaving(true);
+    const numericRisk = Math.max(1, Math.min(5, Math.round(risk / 20)));
+    void saveInvestorProfile({
+      display_name: name, tax_residence: residence || null, currency,
+      annual_income: 1, liquid_savings: Number(initialCapital) || 0, debts: 0,
+      amount_to_invest: Number(initialCapital) || 1, monthly_contribution: Number(monthlyContribution) || 0,
+      investment_horizon_years: Number(horizonYears) || 1, risk_tolerance: numericRisk, risk_capacity: numericRisk,
+      max_loss_percent: Number(maxLoss) || 0, investment_goal: objective,
+      preferred_assets: assets, preferred_sectors: sectors, exclusions: excludedSectors,
+      investment_experience: experience, liquidity_needs: liquidityNeed,
+      constraints: notes.trim() ? [notes.trim()] : [],
+    }).then(() => onNotice('Profil sauvegardé dans votre compte.'))
+      .catch((error: Error) => onNotice(`Impossible d’enregistrer le profil : ${error.message}`))
+      .finally(() => setSaving(false));
   };
   const riskLabel = risk < 35 ? 'Prudent' : risk < 70 ? 'Équilibré' : 'Dynamique';
   const displayCurrency = currency === 'OTHER' ? customCurrency || 'devise choisie' : currency;
@@ -90,7 +129,7 @@ export default function Profile({ onNotice }: ProfileProps) {
         <span className="profile-avatar" aria-hidden="true">CM</span>
       </section>
 
-      <form className="profile-form modular-profile-form" onSubmit={save}>
+      <form className="profile-form modular-profile-form" onSubmit={save} aria-busy={loading || saving}>
         <div className="form-progress"><div><strong>Profil personnalisé</strong><span>Les champs marqués facultatifs peuvent être complétés plus tard.</span></div><span>Étape 1 sur 1</span></div>
 
         <section className="form-section">
@@ -137,7 +176,7 @@ export default function Profile({ onNotice }: ProfileProps) {
         </section>
 
         <details className="advanced-details" open={advancedOpen} onToggle={(event) => setAdvancedOpen(event.currentTarget.open)}><summary><span><span className="eyebrow">06 · Détails avancés</span><strong>Ce que vous voulez encore nous préciser</strong></span><span aria-hidden="true">{advancedOpen ? '−' : '+'}</span></summary><div className="advanced-content"><div className="field-grid"><label>Votre expérience d’investissement <span className="optional">libre</span><input value={experience} onChange={(event) => setExperience(event.target.value)} placeholder="Ex. Je connais les ETF mais pas les obligations" /></label><label>Besoin de liquidité <span className="optional">libre</span><input value={liquidityNeed} onChange={(event) => setLiquidityNeed(event.target.value)} placeholder="Ex. 10 000 € disponibles sous 12 mois" /></label></div><label>Autres contraintes ou informations utiles <span className="optional">libre</span><textarea value={notes} onChange={(event) => setNotes(event.target.value)} rows={3} placeholder="Fiscalité, convictions, devise, contraintes personnelles..." /></label></div></details>
-        <div className="form-actions"><span className="form-save-note">Les préférences restent modifiables à tout moment.</span><button className="primary-action" type="submit">Enregistrer le profil</button></div>
+        <div className="form-actions"><span className="form-save-note">Les préférences restent modifiables à tout moment.</span><button className="primary-action" type="submit" disabled={loading || saving}>{saving ? 'Enregistrement…' : 'Enregistrer le profil'}</button></div>
       </form>
     </div>
   );

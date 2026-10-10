@@ -1,4 +1,7 @@
 import os
+from pathlib import Path
+
+from dotenv import load_dotenv
 
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
@@ -9,7 +12,11 @@ from app.api.portfolio import router as portfolio_router
 from app.api.market import router as market_router
 from app.api.agent import router as agent_router
 from app.api.auth import router as auth_router
+from app.api.rag import router as rag_router
 from app.database.auth import initialize_auth_database
+
+
+load_dotenv(Path(__file__).resolve().parents[1] / ".env")
 
 
 app = FastAPI(
@@ -46,6 +53,7 @@ app.include_router(portfolio_router)
 app.include_router(market_router)
 app.include_router(agent_router)
 app.include_router(auth_router)
+app.include_router(rag_router)
 initialize_auth_database()
 
 

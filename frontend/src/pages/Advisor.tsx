@@ -20,6 +20,7 @@ export default function Advisor({ onNotice, onOpenAccount }: AdvisorProps) {
     },
   ]);
   const [isSending, setIsSending] = useState(false);
+  const [conversationId, setConversationId] = useState<number>();
 
   const send = (event: FormEvent) => {
     event.preventDefault();
@@ -29,11 +30,15 @@ export default function Advisor({ onNotice, onOpenAccount }: AdvisorProps) {
     setMessages((current) => [...current, { role: 'user', content: cleanQuestion }]);
     setQuestion('');
     setIsSending(true);
-    void askAdvisor(cleanQuestion)
+    void askAdvisor(cleanQuestion, conversationId)
       .then((response) => {
+        setConversationId(response.conversation_id);
+        const sources = response.sources?.length
+          ? `\n\nSources : ${response.sources.map((source) => source.url ? `${source.title} (${source.url})` : source.title).join(', ')}`
+          : '';
         setMessages((current) => [
           ...current,
-          { role: 'assistant', content: `${response.message}\n\n${response.disclaimer}` },
+          { role: 'assistant', content: `${response.message}\n\n${response.disclaimer}${sources}` },
         ]);
       })
       .catch((error: Error) => {
@@ -53,6 +58,7 @@ export default function Advisor({ onNotice, onOpenAccount }: AdvisorProps) {
   const startConversation = () => {
     setMessages([]);
     setQuestion('');
+    setConversationId(undefined);
     onNotice('Nouvelle conversation créée en mode simulation.');
   };
 

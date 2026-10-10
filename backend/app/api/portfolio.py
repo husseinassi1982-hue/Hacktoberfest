@@ -1,5 +1,7 @@
-from fastapi import APIRouter
-from app.models.portfolio import Portfolio
+from fastapi import APIRouter, Depends, HTTPException, status
+from app.api.dependencies import get_current_user
+from app.database.persistence import delete_portfolio, get_portfolio, list_portfolios, save_portfolio
+from app.models.portfolio import Portfolio, StoredPortfolioRequest
 from app.quant.portfolio import analyze_portfolio
 from app.models.suitability import SuitabilityRequest
 from app.services.suitability import check_portfolio_suitability
@@ -32,6 +34,31 @@ router = APIRouter(
     prefix="/portfolio",
     tags=["Portfolio"]
 )
+
+
+@router.get("/saved")
+def saved_portfolios(user: dict[str, str] = Depends(get_current_user)):
+    return {"portfolios": list_portfolios(int(user["id"]))}
+
+
+@router.get("/saved/{portfolio_id}")
+def saved_portfolio(portfolio_id: int, user: dict[str, str] = Depends(get_current_user)):
+    result = get_portfolio(int(user["id"]), portfolio_id)
+    if result is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Portfolio not found.")
+    return result
+
+
+@router.post("/saved")
+def create_saved_portfolio(request: StoredPortfolioRequest, user: dict[str, str] = Depends(get_current_user)):
+    return save_portfolio(int(user["id"]), request.name, request.portfolio)
+
+
+@router.delete("/saved/{portfolio_id}")
+def remove_saved_portfolio(portfolio_id: int, user: dict[str, str] = Depends(get_current_user)):
+    if not delete_portfolio(int(user["id"]), portfolio_id):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Portfolio not found.")
+    return {"message": "Portfolio deleted."}
 
 
 @router.post("/analyze")

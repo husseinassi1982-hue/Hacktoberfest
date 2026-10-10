@@ -8,6 +8,7 @@ class AgentChatRequest(BaseModel):
     message: str = Field(min_length=1, max_length=4000)
     profile: InvestorProfile | None = None
     portfolio: Portfolio | None = None
+    conversation_id: int | None = Field(default=None, gt=0)
 
 
 class AgentToolResult(BaseModel):
@@ -20,3 +21,5 @@ class AgentChatResponse(BaseModel):
     mode: str
     tools_used: list[AgentToolResult] = Field(default_factory=list)
     disclaimer: str
+    conversation_id: int | None = None
+    sources: list[dict] = Field(default_factory=list)

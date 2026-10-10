@@ -1,0 +1,26 @@
+services:
+  backend:
+    build: ./backend
+    environment:
+      DATABASE_URL: postgresql://finpilot:finpilot@postgres:5432/finpilot
+      FRONTEND_ORIGINS: http://localhost:5173
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GEMMA_MODEL: ${GEMMA_MODEL:-gemma-4-26b-a4b-it}
+    ports: ["8000:8000"]
+    depends_on: [postgres]
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_API_BASE_URL: http://localhost:8000
+    ports: ["5173:80"]
+    depends_on: [backend]
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: finpilot
+      POSTGRES_USER: finpilot
+      POSTGRES_PASSWORD: finpilot
+    volumes: [finpilot-db:/var/lib/postgresql/data]
+volumes:
+  finpilot-db:

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import AllocationChart from '../components/AllocationChart';
 import MonteCarloChart from '../components/MonteCarloChart';
 import PortfolioValue from '../components/PortfolioValue';
@@ -7,7 +7,8 @@ import Portfolio from './Portfolio';
 import Advisor from './Advisor';
 import Profile from './Profile';
 import AccountActions from '../components/AccountActions';
-import AccountDialog from '../components/AccountDialog';
+import AuthDialog from '../components/AuthDialog';
+import { AuthUser, getStoredUser, logout } from '../api';
 
 const navigation = [['⌂', 'Vue d’ensemble'], ['◒', 'Portefeuille'], ['✦', 'Conseiller IA'], ['◎', 'Profil investisseur']];
 
@@ -15,6 +16,9 @@ export default function Dashboard() {
   const [active, setActive] = useState('Vue d’ensemble');
   const [notice, setNotice] = useState('Données de démonstration actives. Les calculs réels seront fournis par FastAPI.');
   const [accountDialogOpen, setAccountDialogOpen] = useState(false);
+  const [user, setUser] = useState<AuthUser | null>(() => getStoredUser());
+  useEffect(() => { if (!user) setNotice('Données de démonstration actives. Connectez-vous pour enregistrer vos données.'); }, [user]);
+  const signOut = () => { void logout().finally(() => { setUser(null); setNotice('Vous êtes déconnecté.'); }); };
   const selectNavigation = (label: string) => {
     setActive(label);
     setNotice(label === 'Vue d’ensemble' ? 'Vue d’ensemble sélectionnée.' : `${label} ouvert. Les données affichées sont simulées jusqu’au branchement de FastAPI.`);
@@ -31,7 +35,7 @@ export default function Dashboard() {
   };
   return <div className="app-shell">
     <aside className="sidebar"><div className="brand"><span className="brand-mark" /><span className="brand-name">NORTHSTAR</span></div><nav className="nav" aria-label="Navigation principale">{navigation.map(([icon, label]) => <button className={`nav-button ${active === label ? 'active' : ''}`} key={label} aria-current={active === label ? 'page' : undefined} onClick={() => selectNavigation(label)}><span className="nav-icon" aria-hidden="true">{icon}</span><span>{label}</span></button>)}</nav><div className="sidebar-footer"><span className="status-dot" />Données simulées<br />Dernière synchro : aujourd’hui, 09:42</div></aside>
-    <main className={`content ${active === 'Conseiller IA' ? 'content-advisor' : ''}`}><a className="skip-link" href="#main-content">Aller au contenu principal</a>{active !== 'Conseiller IA' && <><header className="topbar"><div><div className="eyebrow">Espace patrimonial / {active}</div><h1>{active === 'Vue d’ensemble' ? 'Bonjour Camille.' : active}</h1><p className="subtitle">{active === 'Vue d’ensemble' ? 'Une lecture claire de votre trajectoire, avant votre prochaine décision.' : 'Retrouvez ici les informations et actions liées à cet espace.'}</p></div><div className="topbar-actions"><div className="date-pill">09 OCT. 2026 · MARCHÉS OUVERTS</div><AccountActions onOpen={() => setAccountDialogOpen(true)} /></div></header><p className="system-notice" role="status" aria-live="polite"><span className="status-dot" />{notice}</p></>}{renderPage()}</main>
-    {accountDialogOpen && <AccountDialog onClose={() => setAccountDialogOpen(false)} onNotice={setNotice} />}
+    <main className={`content ${active === 'Conseiller IA' ? 'content-advisor' : ''}`}><a className="skip-link" href="#main-content">Aller au contenu principal</a>{active !== 'Conseiller IA' && <><header className="topbar"><div><div className="eyebrow">Espace patrimonial / {active}</div><h1>{active === 'Vue d’ensemble' ? 'Bonjour Camille.' : active}</h1><p className="subtitle">{active === 'Vue d’ensemble' ? 'Une lecture claire de votre trajectoire, avant votre prochaine décision.' : 'Retrouvez ici les informations et actions liées à cet espace.'}</p></div><div className="topbar-actions"><div className="date-pill">09 OCT. 2026 · MARCHÉS OUVERTS</div><AccountActions user={user} onOpen={() => setAccountDialogOpen(true)} onLogout={signOut} /></div></header><p className="system-notice" role="status" aria-live="polite"><span className="status-dot" />{notice}</p></>}{renderPage()}</main>
+    {accountDialogOpen && <AuthDialog onClose={() => setAccountDialogOpen(false)} onNotice={setNotice} onAuthenticated={setUser} />}
   </div>;
 }
